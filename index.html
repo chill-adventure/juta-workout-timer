@@ -61,6 +61,7 @@
       border-radius: 30px;
       width: 100%;
       justify-content: center;
+      cursor: pointer;
     }
     .bee-avatar {
       width: 60px;
@@ -69,7 +70,6 @@
       object-fit: contain;
       transition: transform 0.2s;
     }
-    /* Beeを右向きに反転させるクラス */
     .bee-avatar.flip-right {
       transform: scaleX(-1);
     }
@@ -161,7 +161,7 @@
 </head>
 <body>
 
-  <div class="timer-card">
+  <div class="timer-card" id="timerCard">
     <!-- Juta メイン映像表示 -->
     <div class="media-container">
       <video id="jutaVideo" loop muted playsinline style="display: none;" src="juta_work1.mp4"></video>
@@ -174,7 +174,7 @@
     <div class="timer-display" id="timeDisplay">00:30</div>
 
     <!-- Bee キャラクター＆ナビゲート枠 -->
-    <div class="bee-container">
+    <div class="bee-container" onclick="playWelcomeVoice()">
       <img id="beeImg" class="bee-avatar flip-right" src="bee_welcome_push.png" alt="Bee">
       <div id="messageText" class="bee-speech">「時間を選んでスタートを押してね！」</div>
     </div>
@@ -224,6 +224,7 @@
     let currentSet = 1;
     let totalSets = 3;
     let timeLeft = 30;
+    let hasPlayedWelcome = false;
 
     const jutaVideo = document.getElementById('jutaVideo');
     const jutaImg = document.getElementById('jutaImg');
@@ -235,7 +236,7 @@
     const startBtn = document.getElementById('startBtn');
     const bgmAudio = document.getElementById('bgmAudio');
 
-    // 安全な音声再生関数（エラー停止を100%防止）
+    // 安全な音声再生関数
     function safePlayAudio(filename, volume = 1.0) {
       if (!filename) return;
       try {
@@ -243,14 +244,23 @@
         audio.volume = volume;
         const promise = audio.play();
         if (promise !== undefined) {
-          promise.catch(err => {
-            console.log("Audio play blocked by browser:", err);
-          });
+          promise.catch(err => console.log("Audio blocked:", err));
         }
       } catch (e) {
-        console.log("Audio error caught:", e);
+        console.log("Audio error:", e);
       }
     }
+
+    // 初回操作時のウエルカムボイス再生
+    function playWelcomeVoice() {
+      if (!hasPlayedWelcome && currentPhase === 'idle') {
+        safePlayAudio('bee_welcome_push.mp3', 0.8);
+        hasPlayedWelcome = true;
+      }
+    }
+
+    // 画面クリック時にもウエルカムボイスの再生許可を得る
+    document.getElementById('timerCard').addEventListener('click', playWelcomeVoice, { once: true });
 
     // カウントダウン表示整形
     function formatTime(seconds) {
@@ -272,6 +282,8 @@
 
     // タイマー開始/一時停止
     function toggleTimer() {
+      playWelcomeVoice(); // 未再生ならスタート時に鳴らす
+
       if (!isRunning) {
         startTimer();
       } else {
@@ -314,6 +326,7 @@
       clearInterval(timerId);
       isRunning = false;
       currentPhase = 'idle';
+      hasPlayedWelcome = false;
       startBtn.textContent = '運動スタート';
 
       jutaVideo.pause();
@@ -387,9 +400,9 @@
       beeImg.classList.remove('flip-right'); // 左向き
       messageText.textContent = '「がんばれがんばれー！」';
 
-      // 被り防止掛け合い
-      safePlayAudio('bee_cheer.mp3');
-      setTimeout(() => { safePlayAudio('juta_start.mp3'); }, 2200);
+      // ★ 変更点: Juta「運動スタート」が先 ➔ 次に Bee「がんばれがんばれー！」
+      safePlayAudio('juta_start.mp3');
+      setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1500);
     }
 
     // 休憩フェーズ開始
@@ -409,7 +422,7 @@
       beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
 
-      // 被り防止掛け合い
+      // 被り防止掛け合い（Bee ➔ Juta）
       safePlayAudio('bee_rest.mp3');
       setTimeout(() => { safePlayAudio('juta_rest.mp3'); }, 2500);
     }
@@ -433,7 +446,7 @@
 
       bgmAudio.pause();
 
-      // 被り防止掛け合い
+      // 被り防止掛け合い（Bee ➔ Juta）
       safePlayAudio('bee_finish.mp3');
       setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3200);
     }
