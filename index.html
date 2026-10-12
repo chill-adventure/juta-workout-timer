@@ -251,7 +251,7 @@
       }
     }
 
-    // 初回操作時のウエルカムボイス再生
+    // 初回ユーザー操作時に案内の声を鳴らす
     function playWelcomeVoice() {
       if (!hasPlayedWelcome && currentPhase === 'idle') {
         safePlayAudio('bee_welcome_push.mp3', 0.8);
@@ -259,8 +259,8 @@
       }
     }
 
-    // 画面クリック時にもウエルカムボイスの再生許可を得る
-    document.getElementById('timerCard').addEventListener('click', playWelcomeVoice, { once: true });
+    // 画面のどこかをタッチ/クリックした時にウエルカムボイスを起動
+    document.addEventListener('pointerdown', playWelcomeVoice, { once: true });
 
     // カウントダウン表示整形
     function formatTime(seconds) {
@@ -282,8 +282,6 @@
 
     // タイマー開始/一時停止
     function toggleTimer() {
-      playWelcomeVoice(); // 未再生ならスタート時に鳴らす
-
       if (!isRunning) {
         startTimer();
       } else {
@@ -400,7 +398,7 @@
       beeImg.classList.remove('flip-right'); // 左向き
       messageText.textContent = '「がんばれがんばれー！」';
 
-      // ★ 変更点: Juta「運動スタート」が先 ➔ 次に Bee「がんばれがんばれー！」
+      // 順序: Juta「運動スタート」 ➔ Bee「がんばれがんばれー！」
       safePlayAudio('juta_start.mp3');
       setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1500);
     }
@@ -422,9 +420,9 @@
       beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
 
-      // 被り防止掛け合い（Bee ➔ Juta）
-      safePlayAudio('bee_rest.mp3');
-      setTimeout(() => { safePlayAudio('juta_rest.mp3'); }, 2500);
+      // 順序: Juta「休憩」 ➔ Bee「ふぅ〜しっかり息を整えてね！」
+      safePlayAudio('juta_rest.mp3');
+      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 1200);
     }
 
     // 全セット終了
@@ -446,9 +444,9 @@
 
       bgmAudio.pause();
 
-      // 被り防止掛け合い（Bee ➔ Juta）
+      // 順序: Bee「やったね！」 ➔ Juta「お疲れ様でした！」
       safePlayAudio('bee_finish.mp3');
-      setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3200);
+      setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 2000);
     }
   </script>
 </body>
