@@ -348,17 +348,26 @@
     }
   }
 // juta_work1 や juta_work2 のループ時のラグ（コマ飛び）を消す処理
+// 運動動画のシームレス（完全繋ぎ目なし）ループ制御
 const video = document.getElementById('jutaVideo');
 if (video) {
+  // 標準のloop属性によるラグを防ぐため、JS側で終端手前制御
+  video.removeAttribute('loop');
+
   video.addEventListener('timeupdate', function() {
-    // 動画の終了直前（残り0.05秒）になったら一瞬で先頭に戻して再生を続ける
-    if (this.duration && this.currentTime >= this.duration - 0.05) {
+    // 動画の終了直前（残り0.08秒手前）で先頭にジャンプして再生を維持
+    if (this.duration && this.currentTime >= this.duration - 0.08) {
       this.currentTime = 0;
-      this.play();
+      this.play().catch(e => console.log("Loop play error:", e));
     }
   });
 }
-
+// ↓このブロックを削除（またはコメントアウト）
+const video = document.getElementById('jutaVideo');
+if (video) {
+  video.removeAttribute('loop');
+  video.addEventListener('timeupdate', function() { ... });
+}
 </script>
 
 </body>
