@@ -61,7 +61,6 @@
       border-radius: 30px;
       width: 100%;
       justify-content: center;
-      cursor: pointer;
     }
     .bee-avatar {
       width: 60px;
@@ -161,7 +160,7 @@
 </head>
 <body>
 
-  <div class="timer-card" id="timerCard">
+  <div class="timer-card">
     <!-- Juta メイン映像表示 -->
     <div class="media-container">
       <video id="jutaVideo" loop muted playsinline style="display: none;" src="juta_work1.mp4"></video>
@@ -224,7 +223,6 @@
     let currentSet = 1;
     let totalSets = 3;
     let timeLeft = 30;
-    let welcomePlayed = false;
 
     const jutaVideo = document.getElementById('jutaVideo');
     const jutaImg = document.getElementById('jutaImg');
@@ -251,22 +249,6 @@
       }
     }
 
-    // 初回画面タッチ/クリック時の処理（スタートボタン以外を押した時だけ案内を流す）
-    function handleInitialInteraction(e) {
-      if (welcomePlayed || currentPhase !== 'idle') return;
-
-      // クリックされたのがスタートボタンなら、初期案内は鳴らさずにパス
-      if (e.target && e.target.id === 'startBtn') {
-        welcomePlayed = true;
-        return;
-      }
-
-      welcomePlayed = true;
-      safePlayAudio('bee_welcome_push.mp3', 0.8);
-    }
-
-    document.addEventListener('pointerdown', handleInitialInteraction, { once: true });
-
     // カウントダウン表示整形
     function formatTime(seconds) {
       const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -287,8 +269,6 @@
 
     // タイマー開始/一時停止
     function toggleTimer() {
-      welcomePlayed = true; // スタートを押したので初期案内フラグを埋める
-
       if (!isRunning) {
         startTimer();
       } else {
@@ -299,12 +279,6 @@
     function startTimer() {
       isRunning = true;
       startBtn.textContent = '一時停止';
-      
-      // BGM再生
-      try {
-        bgmAudio.volume = 0.25;
-        bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
-      } catch(e) {}
 
       if (currentPhase === 'idle') {
         currentSet = 1;
@@ -312,6 +286,11 @@
       } else {
         if (currentPhase === 'work') {
           jutaVideo.play().catch(e => console.log(e));
+          // 一時停止からの再開時、運動中ならBGMも再開
+          try {
+            bgmAudio.volume = 0.25;
+            bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
+          } catch(e) {}
         }
       }
 
@@ -331,7 +310,6 @@
       clearInterval(timerId);
       isRunning = false;
       currentPhase = 'idle';
-      welcomePlayed = false;
       startBtn.textContent = '運動スタート';
 
       jutaVideo.pause();
@@ -389,6 +367,12 @@
       setsInfo.textContent = `${currentSet}/${totalSets} セット`;
       statusBadge.textContent = '運動中！';
 
+      // ★ 運動スタート時にBGMを再生！
+      try {
+        bgmAudio.volume = 0.25;
+        bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
+      } catch(e) {}
+
       // 奇数セットは走る(juta_work1)、偶数セットは自転車こぎ(juta_work2)
       const targetVideo = (currentSet % 2 !== 0) ? 'juta_work1.mp4' : 'juta_work2.mp4';
       if (jutaVideo.getAttribute('src') !== targetVideo) {
@@ -416,6 +400,9 @@
       timeLeft = parseInt(document.getElementById('restTimeSelect').value);
       timeDisplay.textContent = formatTime(timeLeft);
       statusBadge.textContent = '休憩中…';
+
+      // ★ 休憩に入ったらBGMを停止して静かにする！
+      bgmAudio.pause();
 
       // 表示切り替え
       jutaVideo.pause();
@@ -449,9 +436,10 @@
       beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「やったね！今日もお疲れ様でした！」';
 
+      // BGM停止
       bgmAudio.pause();
 
-      // ★ Bee「やったね！今日もお疲れ様でした！」(長尺) ➔ (3.8秒後) ➔ Juta「お疲れ様でした！」
+      // 順序: Bee「やったね！今日もお疲れ様でした！」 ➔ Juta「お疲れ様でした！」
       safePlayAudio('bee_finish.mp3');
       setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3800);
     }
