@@ -174,7 +174,7 @@
     <div class="timer-display" id="timeDisplay">00:30</div>
 
     <!-- Bee キャラクター＆ナビゲート枠 -->
-    <div class="bee-container" onclick="playWelcomeVoice()">
+    <div class="bee-container">
       <img id="beeImg" class="bee-avatar flip-right" src="bee_welcome_push.png" alt="Bee">
       <div id="messageText" class="bee-speech">「時間を選んでスタートを押してね！」</div>
     </div>
@@ -224,7 +224,7 @@
     let currentSet = 1;
     let totalSets = 3;
     let timeLeft = 30;
-    let hasPlayedWelcome = false;
+    let welcomePlayed = false;
 
     const jutaVideo = document.getElementById('jutaVideo');
     const jutaImg = document.getElementById('jutaImg');
@@ -251,16 +251,21 @@
       }
     }
 
-    // 初回ユーザー操作時に案内の声を鳴らす
-    function playWelcomeVoice() {
-      if (!hasPlayedWelcome && currentPhase === 'idle') {
-        safePlayAudio('bee_welcome_push.mp3', 0.8);
-        hasPlayedWelcome = true;
+    // 初回画面タッチ/クリック時の処理（スタートボタン以外を押した時だけ案内を流す）
+    function handleInitialInteraction(e) {
+      if (welcomePlayed || currentPhase !== 'idle') return;
+
+      // クリックされたのがスタートボタンなら、初期案内は鳴らさずにパス
+      if (e.target && e.target.id === 'startBtn') {
+        welcomePlayed = true;
+        return;
       }
+
+      welcomePlayed = true;
+      safePlayAudio('bee_welcome_push.mp3', 0.8);
     }
 
-    // 画面のどこかをタッチ/クリックした時にウエルカムボイスを起動
-    document.addEventListener('pointerdown', playWelcomeVoice, { once: true });
+    document.addEventListener('pointerdown', handleInitialInteraction, { once: true });
 
     // カウントダウン表示整形
     function formatTime(seconds) {
@@ -282,6 +287,8 @@
 
     // タイマー開始/一時停止
     function toggleTimer() {
+      welcomePlayed = true; // スタートを押したので初期案内フラグを埋める
+
       if (!isRunning) {
         startTimer();
       } else {
@@ -324,7 +331,7 @@
       clearInterval(timerId);
       isRunning = false;
       currentPhase = 'idle';
-      hasPlayedWelcome = false;
+      welcomePlayed = false;
       startBtn.textContent = '運動スタート';
 
       jutaVideo.pause();
@@ -444,9 +451,9 @@
 
       bgmAudio.pause();
 
-      // 順序: Bee「やったね！」 ➔ Juta「お疲れ様でした！」
+      // ★ Bee「やったね！今日もお疲れ様でした！」(長尺) ➔ (3.8秒後) ➔ Juta「お疲れ様でした！」
       safePlayAudio('bee_finish.mp3');
-      setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 2000);
+      setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3800);
     }
   </script>
 </body>
