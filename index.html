@@ -213,8 +213,9 @@
     </div>
   </div>
 
-  <!-- BGM要素 -->
+  <!-- BGM & 環境音要素 -->
   <audio id="bgmAudio" src="juta_bgm_demo.mp3" loop></audio>
+  <audio id="restAudio" src="birds_ambient.mp3" loop></audio>
 
   <script>
     let timerId = null;
@@ -233,6 +234,7 @@
     const messageText = document.getElementById('messageText');
     const startBtn = document.getElementById('startBtn');
     const bgmAudio = document.getElementById('bgmAudio');
+    const restAudio = document.getElementById('restAudio');
 
     // 安全な音声再生関数
     function safePlayAudio(filename, volume = 1.0) {
@@ -283,15 +285,17 @@
       if (currentPhase === 'idle') {
         currentSet = 1;
         startWorkPhase();
-      } else {
-        if (currentPhase === 'work') {
-          jutaVideo.play().catch(e => console.log(e));
-          // 一時停止からの再開時、運動中ならBGMも再開
-          try {
-            bgmAudio.volume = 0.25;
-            bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
-          } catch(e) {}
-        }
+      } else if (currentPhase === 'work') {
+        jutaVideo.play().catch(e => console.log(e));
+        try {
+          bgmAudio.volume = 0.25;
+          bgmAudio.play().catch(e => console.log(e));
+        } catch(e) {}
+      } else if (currentPhase === 'rest') {
+        try {
+          restAudio.volume = 0.4;
+          restAudio.play().catch(e => console.log(e));
+        } catch(e) {}
       }
 
       if (timerId) clearInterval(timerId);
@@ -304,6 +308,7 @@
       clearInterval(timerId);
       jutaVideo.pause();
       bgmAudio.pause();
+      restAudio.pause();
     }
 
     function resetTimer() {
@@ -324,6 +329,8 @@
 
       bgmAudio.pause();
       bgmAudio.currentTime = 0;
+      restAudio.pause();
+      restAudio.currentTime = 0;
 
       initDisplay();
     }
@@ -367,7 +374,9 @@
       setsInfo.textContent = `${currentSet}/${totalSets} セット`;
       statusBadge.textContent = '運動中！';
 
-      // ★ 運動スタート時にBGMを再生！
+      // 休憩音声を停止して運動BGMを再生
+      restAudio.pause();
+      restAudio.currentTime = 0;
       try {
         bgmAudio.volume = 0.25;
         bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
@@ -401,8 +410,12 @@
       timeDisplay.textContent = formatTime(timeLeft);
       statusBadge.textContent = '休憩中…';
 
-      // ★ 休憩に入ったらBGMを停止して静かにする！
+      // 運動BGMを停止して鳥の鳴き声を再生！
       bgmAudio.pause();
+      try {
+        restAudio.volume = 0.4;
+        restAudio.play().catch(e => console.log("Rest audio play suppressed:", e));
+      } catch(e) {}
 
       // 表示切り替え
       jutaVideo.pause();
@@ -436,8 +449,9 @@
       beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「やったね！今日もお疲れ様でした！」';
 
-      // BGM停止
+      // 全音声停止
       bgmAudio.pause();
+      restAudio.pause();
 
       // 順序: Bee「やったね！今日もお疲れ様でした！」 ➔ Juta「お疲れ様でした！」
       safePlayAudio('bee_finish.mp3');
