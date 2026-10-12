@@ -67,6 +67,11 @@
       height: 60px;
       border-radius: 50%;
       object-fit: contain;
+      transition: transform 0.2s;
+    }
+    /* Beeを右向きに反転させるクラス */
+    .bee-avatar.flip-right {
+      transform: scaleX(-1);
     }
     .bee-speech {
       font-size: 14px;
@@ -160,7 +165,7 @@
     <!-- Juta メイン映像表示 -->
     <div class="media-container">
       <video id="jutaVideo" loop muted playsinline style="display: none;">
-        <source src="juta_work1.mp4" type="video/mp4">
+        <source id="videoSource" src="juta_work1.mp4" type="video/mp4">
       </video>
       <img id="jutaImg" src="juta_sleep.png" alt="Juta">
     </div>
@@ -172,7 +177,7 @@
 
     <!-- Bee キャラクター＆ナビゲート枠 -->
     <div class="bee-container">
-      <img id="beeImg" class="bee-avatar" src="bee_welcome_push.png" alt="Bee">
+      <img id="beeImg" class="bee-avatar flip-right" src="bee_welcome_push.png" alt="Bee">
       <div id="messageText" class="bee-speech">「時間を選んでスタートを押してね！」</div>
     </div>
 
@@ -223,6 +228,7 @@
     let timeLeft = 30;
 
     const jutaVideo = document.getElementById('jutaVideo');
+    const videoSource = document.getElementById('videoSource');
     const jutaImg = document.getElementById('jutaImg');
     const beeImg = document.getElementById('beeImg');
     const statusBadge = document.getElementById('statusBadge');
@@ -237,7 +243,7 @@
       if (!filename) return;
       const audio = new Audio(filename);
       audio.volume = volume;
-      audio.play().catch(e => console.log("Audio play suppressed:", e));
+      return audio.play().catch(e => console.log("Audio play suppressed:", e));
     }
 
     // カウントダウン表示整形
@@ -305,6 +311,7 @@
       jutaImg.src = 'juta_sleep.png';
 
       beeImg.src = 'bee_welcome_push.png';
+      beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「時間を選んでスタートを押してね！」';
       statusBadge.textContent = 'すやすや…';
 
@@ -353,6 +360,11 @@
       setsInfo.textContent = `${currentSet}/${totalSets} セット`;
       statusBadge.textContent = '運動中！';
 
+      // 奇数セットは走る(juta_work1)、偶数セットは自転車こぎ(juta_work2)
+      const targetVideo = (currentSet % 2 !== 0) ? 'juta_work1.mp4' : 'juta_work2.mp4';
+      videoSource.src = targetVideo;
+      jutaVideo.load();
+
       // 表示切り替え
       jutaImg.style.display = 'none';
       jutaVideo.style.display = 'block';
@@ -360,11 +372,12 @@
       jutaVideo.play();
 
       beeImg.src = 'bee_cheer.png';
+      beeImg.classList.remove('flip-right'); // bee_cheer だけは元の向き（左向き）
       messageText.textContent = '「がんばれがんばれー！」';
 
-      // ボイス再生
-      playAudio('juta_start.mp3');
-      setTimeout(() => { playAudio('bee_cheer.mp3'); }, 1200);
+      // 声の被り防止：Beeが喋り終えてからJutaがスタート声を出す
+      playAudio('bee_cheer.mp3');
+      setTimeout(() => { playAudio('juta_start.mp3'); }, 2200);
     }
 
     // 休憩フェーズ開始
@@ -381,11 +394,12 @@
       jutaImg.src = 'juta_rest.png';
 
       beeImg.src = 'bee_rest.png';
+      beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
 
-      // ボイス再生
+      // 声の被り防止：Beeが喋った後にJutaの休憩声
       playAudio('bee_rest.mp3');
-      setTimeout(() => { playAudio('juta_rest.mp3'); }, 1000);
+      setTimeout(() => { playAudio('juta_rest.mp3'); }, 2500);
     }
 
     // 全セット終了
@@ -402,17 +416,11 @@
       jutaImg.src = 'juta_finish.png';
 
       beeImg.src = 'bee_finish.png';
+      beeImg.classList.add('flip-right'); // 右向き
       messageText.textContent = '「やったね！今日もお疲れ様でした！」';
 
       bgmAudio.pause();
 
-      // お祝いボイス
+      // 声の被り防止：Beeの「やったね！」の後にJutaの「お疲れ様でした！」
       playAudio('bee_finish.mp3');
-      setTimeout(() => { playAudio('juta_finish.mp3'); }, 1500);
-    }
-
-    // 初期化（ページ読み込み時）
-    playAudio('bee_welcome_push.mp3', 0.8);
-  </script>
-</body>
-</html>
+      setTimeout(() => { playAudio
