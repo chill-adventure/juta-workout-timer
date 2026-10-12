@@ -5,158 +5,198 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jutaの運動タイマー</title>
   <style>
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
-      background-color: #1a1a24;
-      color: #fff;
-      font-family: sans-serif;
+      padding: 0;
+    }
+    body {
+      background-color: #1a1b26;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-    }
-    .card {
-      background: #2a2a38;
-      border-radius: 16px;
       padding: 20px;
-      width: 85%;
-      max-width: 340px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
     }
-    /* メディア表示枠 */
-    .media-box {
-      width: 200px;
-      height: 200px;
-      margin: 0 auto 10px;
+    .timer-card {
+      background-color: #24283b;
+      border-radius: 24px;
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .media-container {
+      position: relative;
+      width: 240px;
+      height: 240px;
       border-radius: 50%;
       overflow: hidden;
-      border: 3px solid #4fc3f7;
-      background: #000;
+      border: 4px solid #38bdf8;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .media-box img, .media-box video {
+    .media-container video,
+    .media-container img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
-    }
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-weight: bold;
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-      background: #555;
-    }
-    .status-work { background: #ff5555; color: #fff; }
-    .status-rest { background: #50fa7b; color: #1a1a24; }
-
-    .set-count {
-      font-size: 0.95rem;
-      color: #aaa;
-      margin-bottom: 2px;
-    }
-    .timer-display {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: #4fc3f7;
-      margin: 2px 0 8px;
-    }
-    .message {
-      font-size: 14px;
-      line-height: 1.4;
-      margin-bottom: 15px;
-      min-height: 40px;
     }
     
-    /* 設定選択エリア */
-    .setting-group {
+    /* Beeのサブ表示エリア */
+    .bee-container {
       display: flex;
-      justify-content: space-between;
-      gap: 6px;
-      margin-bottom: 15px;
-      background: #20202c;
-      padding: 10px;
-      border-radius: 10px;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 16px;
+      border-radius: 30px;
+      width: 100%;
+      justify-content: center;
+    }
+    .bee-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+    .bee-speech {
+      font-size: 14px;
+      font-weight: bold;
+      color: #e0af68;
+    }
+
+    .status-badge {
+      background-color: #3b4261;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .sets-info {
+      font-size: 16px;
+      color: #a9b1d6;
+    }
+    .timer-display {
+      font-size: 56px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      background-color: #1f2335;
+      padding: 12px;
+      border-radius: 16px;
     }
     .setting-item {
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 4px;
+    }
+    .setting-item label {
       font-size: 11px;
-      color: #ccc;
-      flex: 1;
+      color: #787c99;
     }
     .setting-item select {
-      margin-top: 4px;
-      padding: 4px;
-      border-radius: 6px;
-      background: #333;
+      background-color: #292e42;
       color: #fff;
-      border: 1px solid #555;
-      font-size: 12px;
+      border: 1px solid #414868;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 13px;
       width: 100%;
       text-align: center;
+      outline: none;
     }
-
-    .btn-group button {
-      background: #4fc3f7;
-      color: #1a1a24;
+    .button-group {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
       border: none;
-      padding: 10px 20px;
-      border-radius: 20px;
+      border-radius: 16px;
+      font-size: 16px;
       font-weight: bold;
-      font-size: 1rem;
       cursor: pointer;
-      margin: 4px;
+      transition: all 0.2s;
     }
-    .btn-group button.stop-btn {
-      background: #ff79c6;
-      color: #fff;
+    .btn-start {
+      background-color: #38bdf8;
+      color: #0f172a;
+    }
+    .btn-start:hover {
+      background-color: #7dd3fc;
+    }
+    .btn-reset {
+      background-color: #f43f5e;
+      color: #ffffff;
+    }
+    .btn-reset:hover {
+      background-color: #fb7185;
     }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <!-- Juta表示エリア（画像／動画切替） -->
-    <div class="media-box">
+  <div class="timer-card">
+    <!-- Juta メイン映像表示 -->
+    <div class="media-container">
+      <video id="jutaVideo" loop muted playsinline style="display: none;">
+        <source src="juta_work1.mp4" type="video/mp4">
+      </video>
       <img id="jutaImg" src="juta_sleep.png" alt="Juta">
-      <video id="jutaVideo" src="juta_work1.mp4" playsinline loop style="display: none;"></video>
     </div>
 
-    <!-- 状態表示 -->
-    <div id="statusBadge" class="status-badge">すやすや…</div>
-    <div id="setCount" class="set-count">1 / 1 セット</div>
-    <div class="timer-display" id="timerDisplay">00:30</div>
+    <!-- ステータス & カウントダウン -->
+    <div class="status-badge" id="statusBadge">すやすや…</div>
+    <div class="sets-info" id="setsInfo">1/3 セット</div>
+    <div class="timer-display" id="timeDisplay">00:30</div>
 
-    <!-- メッセージ -->
-    <div class="message" id="msg">「時間を選んでスタートを押してね！」</div>
+    <!-- Bee キャラクター＆ナビゲート枠 -->
+    <div class="bee-container">
+      <img id="beeImg" class="bee-avatar" src="bee_welcome_push.png" alt="Bee">
+      <div id="messageText" class="bee-speech">「時間を選んでスタートを押してね！」</div>
+    </div>
 
-    <!-- 設定選択エリア -->
-    <div class="setting-group" id="settingArea">
+    <!-- タイマー設定 -->
+    <div class="settings-grid">
       <div class="setting-item">
-        <label for="workSelect">運動時間</label>
-        <select id="workSelect">
-          <option value="30">30秒（ちょこっと）</option>
-          <option value="60">1分（標準）</option>
-          <option value="180">3分（じっくり）</option>
+        <label>運動時間</label>
+        <select id="workTimeSelect">
+          <option value="30">30秒（ちょこ）</option>
+          <option value="60">1分</option>
+          <option value="180">3分</option>
         </select>
       </div>
-
       <div class="setting-item">
-        <label for="restSelect">休憩時間</label>
-        <select id="restSelect">
+        <label>休憩時間</label>
+        <select id="restTimeSelect">
           <option value="15">15秒</option>
           <option value="30">30秒</option>
           <option value="60">1分</option>
         </select>
       </div>
-
       <div class="setting-item">
-        <label for="setSelect">セット数</label>
-        <select id="setSelect">
+        <label>セット数</label>
+        <select id="setCountSelect">
           <option value="1">1セット</option>
           <option value="3" selected>3セット</option>
           <option value="5">5セット</option>
@@ -165,205 +205,214 @@
     </div>
 
     <!-- 操作ボタン -->
-    <div class="btn-group">
-      <button type="button" onclick="startWorkout()">運動スタート</button>
-      <button type="button" class="stop-btn" onclick="resetTimer()">リセット</button>
+    <div class="button-group">
+      <button class="btn btn-start" id="startBtn" onclick="toggleTimer()">運動スタート</button>
+      <button class="btn btn-reset" onclick="resetTimer()">リセット</button>
     </div>
-
-    <audio id="jutaVoice"></audio>
   </div>
 
-<script>
-  let timerId = null;
-  let mode = 'IDLE'; // IDLE, WORK, REST
-  let timeLeft = 0;
-  
-  let currentSet = 1;
-  let totalSets = 3;
-  let workDuration = 30;
-  let restDuration = 15;
+  <!-- BGM要素 -->
+  <audio id="bgmAudio" src="juta_bgm_demo.mp3" loop></audio>
 
-  function startWorkout() {
-    resetTimer();
+  <script>
+    let timerId = null;
+    let isRunning = false;
+    let currentPhase = 'idle'; // idle, work, rest, finished
+    let currentSet = 1;
+    let totalSets = 3;
+    let timeLeft = 30;
 
-    // ユーザー選択値の取得
-    workDuration = parseInt(document.getElementById('workSelect').value);
-    restDuration = parseInt(document.getElementById('restSelect').value);
-    totalSets = parseInt(document.getElementById('setSelect').value);
+    const jutaVideo = document.getElementById('jutaVideo');
+    const jutaImg = document.getElementById('jutaImg');
+    const beeImg = document.getElementById('beeImg');
+    const statusBadge = document.getElementById('statusBadge');
+    const setsInfo = document.getElementById('setsInfo');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const messageText = document.getElementById('messageText');
+    const startBtn = document.getElementById('startBtn');
+    const bgmAudio = document.getElementById('bgmAudio');
 
-    // iOS動画アンロック（ボタン押下時にロード）
-    const video = document.getElementById('jutaVideo');
-    if (video) video.load();
+    // サウンド再生用の汎用関数
+    function playAudio(filename, volume = 1.0) {
+      if (!filename) return;
+      const audio = new Audio(filename);
+      audio.volume = volume;
+      audio.play().catch(e => console.log("Audio play suppressed:", e));
+    }
 
-    currentSet = 1;
-    switchMode('WORK');
+    // カウントダウン表示整形
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
 
-    timerId = setInterval(() => {
-      timeLeft--;
-      updateDisplay();
+    // 画面初期表示・設定同期
+    function initDisplay() {
+      totalSets = parseInt(document.getElementById('setCountSelect').value);
+      timeLeft = parseInt(document.getElementById('workTimeSelect').value);
+      setsInfo.textContent = `1/${totalSets} セット`;
+      timeDisplay.textContent = formatTime(timeLeft);
+    }
+    document.getElementById('workTimeSelect').addEventListener('change', initDisplay);
+    document.getElementById('setCountSelect').addEventListener('change', initDisplay);
+    initDisplay();
 
-      // 折り返し地点（中間地点）で応援ボイス再生
-      const halfTime = Math.floor(workDuration / 2);
-      if (mode === 'WORK' && timeLeft === halfTime) {
-        playVoice("juta_keepitup.mp3");
+    // タイマー開始/一時停止
+    function toggleTimer() {
+      if (!isRunning) {
+        startTimer();
+      } else {
+        pauseTimer();
+      }
+    }
+
+    function startTimer() {
+      isRunning = true;
+      startBtn.textContent = '一時停止';
+      
+      // BGM再生（音量ひかえめ）
+      bgmAudio.volume = 0.25;
+      bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
+
+      if (currentPhase === 'idle') {
+        currentSet = 1;
+        startWorkPhase();
+      } else {
+        if (currentPhase === 'work') jutaVideo.play();
       }
 
-      if (timeLeft <= 0) {
-        if (mode === 'WORK') {
-          // 運動終了 ➔ 最終セットなら完了、それ以外は休憩へ
-          if (currentSet >= totalSets) {
-            resetTimerKeepFinish();
-            onFinished();
-          } else {
-            switchMode('REST');
+      timerId = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      isRunning = false;
+      startBtn.textContent = '再開';
+      clearInterval(timerId);
+      jutaVideo.pause();
+      bgmAudio.pause();
+    }
+
+    function resetTimer() {
+      clearInterval(timerId);
+      isRunning = false;
+      currentPhase = 'idle';
+      startBtn.textContent = '運動スタート';
+
+      jutaVideo.pause();
+      jutaVideo.style.display = 'none';
+      jutaImg.style.display = 'block';
+      jutaImg.src = 'juta_sleep.png';
+
+      beeImg.src = 'bee_welcome_push.png';
+      messageText.textContent = '「時間を選んでスタートを押してね！」';
+      statusBadge.textContent = 'すやすや…';
+
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+
+      initDisplay();
+    }
+
+    // 1秒ごとの処理
+    function tick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        timeDisplay.textContent = formatTime(timeLeft);
+
+        // 運動中（work）のランダム音声演出（息づかい・声）
+        if (currentPhase === 'work') {
+          if (timeLeft === 15) {
+            playAudio('juta_breath_kitsui.mp3');
+          } else if (timeLeft === 5) {
+            playAudio('juta_breath_moudame.mp3');
+          } else if (timeLeft % 8 === 0 && timeLeft > 0) {
+            playAudio('juta_breath_fufu.mp3', 0.6);
           }
-        } else if (mode === 'REST') {
-          // 休憩終了 ➔ 次のセットの運動へ
+        }
+      } else {
+        // フェーズ切替
+        if (currentPhase === 'work') {
+          if (currentSet < totalSets) {
+            startRestPhase();
+          } else {
+            finishWorkout();
+          }
+        } else if (currentPhase === 'rest') {
           currentSet++;
-          switchMode('WORK');
+          startWorkPhase();
         }
       }
-    }, 1000);
-  }
-
-  function switchMode(newMode) {
-    mode = newMode;
-    const badge = document.getElementById('statusBadge');
-    const msgArea = document.getElementById('msg');
-    const img = document.getElementById('jutaImg');
-    const video = document.getElementById('jutaVideo');
-
-    document.getElementById('setCount').innerText = `${currentSet} / ${totalSets} セット`;
-
-    if (mode === 'WORK') {
-      timeLeft = workDuration;
-      badge.innerText = "🔥 運動中！";
-      badge.className = "status-badge status-work";
-      if (msgArea) msgArea.innerText = "「がんばれがんばれー！」";
-      
-      // セット数に応じて動画（juta_work1 / juta_work2）を交互に切り替え
-      const videoSrc = (currentSet % 2 === 1) ? "juta_work1.mp4" : "juta_work2.mp4";
-      video.src = videoSrc;
-
-      // 動画表示＋再生、画像を隠す
-      img.style.display = 'none';
-      video.style.display = 'block';
-      video.play().catch(e => console.log("動画再生エラー:", e));
-
-      playVoice("juta_start.mp3");
-
-    } else if (mode === 'REST') {
-      timeLeft = restDuration;
-      badge.innerText = "☕ 休憩中";
-      badge.className = "status-badge status-rest";
-      if (msgArea) msgArea.innerText = "「ふぅ〜しっかり息を整えてね！」";
-
-      // 画像表示（へばるJuta）、動画を停止して隠す
-      video.pause();
-      video.style.display = 'none';
-      img.style.display = 'block';
-      img.src = "juta_rest.png";
-
-      playVoice("juta_rest.mp3");
     }
-    updateDisplay();
-  }
 
-  function updateDisplay() {
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    document.getElementById('timerDisplay').innerText = 
-      String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
-  }
+    // 運動フェーズ開始
+    function startWorkPhase() {
+      currentPhase = 'work';
+      timeLeft = parseInt(document.getElementById('workTimeSelect').value);
+      timeDisplay.textContent = formatTime(timeLeft);
+      setsInfo.textContent = `${currentSet}/${totalSets} セット`;
+      statusBadge.textContent = '運動中！';
 
-  function resetTimer() {
-    if (timerId !== null) {
+      // 表示切り替え
+      jutaImg.style.display = 'none';
+      jutaVideo.style.display = 'block';
+      jutaVideo.currentTime = 0;
+      jutaVideo.play();
+
+      beeImg.src = 'bee_cheer.png';
+      messageText.textContent = '「がんばれがんばれー！」';
+
+      // ボイス再生
+      playAudio('juta_start.mp3');
+      setTimeout(() => { playAudio('bee_cheer.mp3'); }, 1200);
+    }
+
+    // 休憩フェーズ開始
+    function startRestPhase() {
+      currentPhase = 'rest';
+      timeLeft = parseInt(document.getElementById('restTimeSelect').value);
+      timeDisplay.textContent = formatTime(timeLeft);
+      statusBadge.textContent = '休憩中…';
+
+      // 表示切り替え
+      jutaVideo.pause();
+      jutaVideo.style.display = 'none';
+      jutaImg.style.display = 'block';
+      jutaImg.src = 'juta_rest.png';
+
+      beeImg.src = 'bee_rest.png';
+      messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
+
+      // ボイス再生
+      playAudio('bee_rest.mp3');
+      setTimeout(() => { playAudio('juta_rest.mp3'); }, 1000);
+    }
+
+    // 全セット終了
+    function finishWorkout() {
       clearInterval(timerId);
-      timerId = null;
-    }
-    mode = 'IDLE';
-    
-    const video = document.getElementById('jutaVideo');
-    const img = document.getElementById('jutaImg');
-    const badge = document.getElementById('statusBadge');
-    const msgArea = document.getElementById('msg');
+      isRunning = false;
+      currentPhase = 'finished';
+      statusBadge.textContent = '完了！';
+      startBtn.textContent = '運動スタート';
 
-    if (video) {
-      video.pause();
-      video.style.display = 'none';
-    }
-    if (img) {
-      img.style.display = 'block';
-      img.src = "juta_sleep.png";
-    }
+      jutaVideo.pause();
+      jutaVideo.style.display = 'none';
+      jutaImg.style.display = 'block';
+      jutaImg.src = 'juta_finish.png';
 
-    if (badge) {
-      badge.innerText = "すやすや…";
-      badge.className = "status-badge";
-    }
-    if (msgArea) msgArea.innerText = "「時間を選んでスタートを押してね！」";
+      beeImg.src = 'bee_finish.png';
+      messageText.textContent = '「やったね！今日もお疲れ様でした！」';
 
-    document.getElementById('setCount').innerText = "1 / 1 セット";
-    document.getElementById('timerDisplay').innerText = "00:30";
-  }
+      bgmAudio.pause();
 
-  function resetTimerKeepFinish() {
-    if (timerId !== null) {
-      clearInterval(timerId);
-      timerId = null;
-    }
-    mode = 'IDLE';
-  }
-
-  function onFinished() {
-    const video = document.getElementById('jutaVideo');
-    const img = document.getElementById('jutaImg');
-    const badge = document.getElementById('statusBadge');
-    const msgArea = document.getElementById('msg');
-
-    if (video) {
-      video.pause();
-      video.style.display = 'none';
-    }
-    if (img) {
-      img.style.display = 'block';
-      img.src = "juta_finish.png";
+      // お祝いボイス
+      playAudio('bee_finish.mp3');
+      setTimeout(() => { playAudio('juta_finish.mp3'); }, 1500);
     }
 
-    if (badge) {
-      badge.innerText = "🎉 全セット完了！";
-      badge.className = "status-badge";
-    }
-    if (msgArea) msgArea.innerText = "「やったね！今日もお疲れ様でした！」";
-
-    playVoice("juta_finish.mp3");
-  }
-
-  function playVoice(src) {
-    const audio = document.getElementById('jutaVoice');
-    if (audio) {
-      audio.src = src;
-      audio.currentTime = 0;
-      audio.play().catch(e => console.log("音声再生エラー:", e));
-    }
-  }
-// juta_work1 や juta_work2 のループ時のラグ（コマ飛び）を消す処理
-// 運動動画のシームレス（完全繋ぎ目なし）ループ制御
-const video = document.getElementById('jutaVideo');
-if (video) {
-  // 標準のloop属性によるラグを防ぐため、JS側で終端手前制御
-  video.removeAttribute('loop');
-
-  video.addEventListener('timeupdate', function() {
-    // 動画の終了直前（残り0.08秒手前）で先頭にジャンプして再生を維持
-    if (this.duration && this.currentTime >= this.duration - 0.08) {
-      this.currentTime = 0;
-      this.play().catch(e => console.log("Loop play error:", e));
-    }
-  });
-}
-
-</script>
-
+    // 初期化（ページ読み込み時）
+    playAudio('bee_welcome_push.mp3', 0.8);
+  </script>
 </body>
 </html>
