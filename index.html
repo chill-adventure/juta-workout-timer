@@ -223,6 +223,7 @@
     let currentPhase = 'idle'; // idle, work, rest, finished
     let currentSet = 1;
     let totalSets = 3;
+    let initialWorkTime = 30;
     let timeLeft = 30;
 
     const jutaVideo = document.getElementById('jutaVideo');
@@ -235,6 +236,24 @@
     const startBtn = document.getElementById('startBtn');
     const bgmAudio = document.getElementById('bgmAudio');
     const restAudio = document.getElementById('restAudio');
+
+    // 運動中のランダムボイスリスト
+    const workRandomVoices = [
+      'juta_breath_kitsui.mp3',
+      'juta_rest4.mp3',
+      'juta_rest3.mp3',
+      'juta_rest2.mp3',
+      'juta_breath_moudame1.mp3',
+      'juta_breath_tukareta.mp3',
+      'bee_breath_madamada.mp3'
+    ];
+
+    // 休憩中のランダムボイスリスト
+    const restRandomVoices = [
+      'juta_rest.mp3',
+      'juta_breath_konjotte.mp3',
+      'juta_breath_motukareta.mp3'
+    ];
 
     // 安全な音声再生関数
     function safePlayAudio(filename, volume = 1.0) {
@@ -261,7 +280,8 @@
     // 画面初期表示・設定同期
     function initDisplay() {
       totalSets = parseInt(document.getElementById('setCountSelect').value);
-      timeLeft = parseInt(document.getElementById('workTimeSelect').value);
+      initialWorkTime = parseInt(document.getElementById('workTimeSelect').value);
+      timeLeft = initialWorkTime;
       setsInfo.textContent = `1/${totalSets} セット`;
       timeDisplay.textContent = formatTime(timeLeft);
     }
@@ -335,20 +355,32 @@
       initDisplay();
     }
 
-    // 1秒ごとの処理
+    // 1秒ごとの処理（ボイス切り替えロジック）
     function tick() {
       if (timeLeft > 0) {
         timeLeft--;
         timeDisplay.textContent = formatTime(timeLeft);
 
-        // 運動中（work）の掛け声・息づかい演出
+        // 運動中（work）の演出制御
         if (currentPhase === 'work') {
-          if (timeLeft === 15) {
-            safePlayAudio('juta_breath_kitsui.mp3');
-          } else if (timeLeft === 5) {
-            safePlayAudio('juta_breath_moudame.mp3');
-          } else if (timeLeft % 8 === 0 && timeLeft > 0) {
-            safePlayAudio('juta_breath_fufu.mp3', 0.6);
+          const halfTime = Math.floor(initialWorkTime / 2);
+
+          // 1. ちょうど残り時間が半分になった時
+          if (timeLeft === halfTime) {
+            safePlayAudio('juta_breath_atohannbun.mp3');
+          }
+          // 2. 残り5秒（ラストスパート）
+          else if (timeLeft === 5) {
+            safePlayAudio('juta_breath_moudame2.mp3');
+          }
+          // 3. 3セット目限定（残り10秒）で「根性ってどこから～」
+          else if (currentSet === 3 && timeLeft === 10) {
+            safePlayAudio('juta_breath_konjotte.mp3');
+          }
+          // 4. 定期的なランダム弱音・息づかい（8秒ごと）
+          else if (timeLeft % 8 === 0 && timeLeft > 0) {
+            const randomVoice = workRandomVoices[Math.floor(Math.random() * workRandomVoices.length)];
+            safePlayAudio(randomVoice);
           }
         }
       } else {
@@ -369,38 +401,43 @@
     // 運動フェーズ開始
     function startWorkPhase() {
       currentPhase = 'work';
-      timeLeft = parseInt(document.getElementById('workTimeSelect').value);
+      initialWorkTime = parseInt(document.getElementById('workTimeSelect').value);
+      timeLeft = initialWorkTime;
       timeDisplay.textContent = formatTime(timeLeft);
       setsInfo.textContent = `${currentSet}/${totalSets} セット`;
       statusBadge.textContent = '運動中！';
 
-      // 休憩音声を停止して運動BGMを再生
+      // 運動BGM再生
       restAudio.pause();
       restAudio.currentTime = 0;
       try {
         bgmAudio.volume = 0.25;
-        bgmAudio.play().catch(e => console.log("BGM play suppressed:", e));
+        bgmAudio.play().catch(e => console.log(e));
       } catch(e) {}
 
-      // 奇数セットは走る(juta_work1)、偶数セットは自転車こぎ(juta_work2)
-      const targetVideo = (currentSet % 2 !== 0) ? 'juta_work1.mp4' : 'juta_work2.mp4';
+      // 動画切り替え＆息ボイス（奇数：走る／偶数：自転車）
+      const isOdd = (currentSet % 2 !== 0);
+      const targetVideo = isOdd ? 'juta_work1.mp4' : 'juta_work2.mp4';
       if (jutaVideo.getAttribute('src') !== targetVideo) {
         jutaVideo.src = targetVideo;
       }
 
-      // 表示切り替え
       jutaImg.style.display = 'none';
       jutaVideo.style.display = 'block';
       jutaVideo.currentTime = 0;
-      jutaVideo.play().catch(e => console.log("Video play suppressed:", e));
+      jutaVideo.play().catch(e => console.log(e));
 
       beeImg.src = 'bee_cheer.png';
-      beeImg.classList.remove('flip-right'); // 左向き
+      beeImg.classList.remove('flip-right');
       messageText.textContent = '「がんばれがんばれー！」';
 
-      // 順序: Juta「運動スタート」 ➔ Bee「がんばれがんばれー！」
+      // スタート声 ➔ Bee応援 ➔ 運動専用息ボイス（奇数/偶数）
       safePlayAudio('juta_start.mp3');
       setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1500);
+      setTimeout(() => {
+        const breathVoice = isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3';
+        safePlayAudio(breathVoice, 0.7);
+      }, 3200);
     }
 
     // 休憩フェーズ開始
@@ -410,11 +447,11 @@
       timeDisplay.textContent = formatTime(timeLeft);
       statusBadge.textContent = '休憩中…';
 
-      // 運動BGMを停止して鳥の鳴き声を再生！
+      // BGM停止 & 鳥のさえずり再生
       bgmAudio.pause();
       try {
         restAudio.volume = 0.4;
-        restAudio.play().catch(e => console.log("Rest audio play suppressed:", e));
+        restAudio.play().catch(e => console.log(e));
       } catch(e) {}
 
       // 表示切り替え
@@ -424,12 +461,15 @@
       jutaImg.src = 'juta_rest.png';
 
       beeImg.src = 'bee_rest.png';
-      beeImg.classList.add('flip-right'); // 右向き
+      beeImg.classList.add('flip-right');
       messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
 
-      // 順序: Juta「休憩」 ➔ Bee「ふぅ〜しっかり息を整えてね！」
-      safePlayAudio('juta_rest.mp3');
-      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 1200);
+      // 順序: Beeの言葉 ➔ 休憩ボイス（ランダムで本音ボイス差し込み）
+      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 500);
+      setTimeout(() => {
+        const randomRestVoice = restRandomVoices[Math.floor(Math.random() * restRandomVoices.length)];
+        safePlayAudio(randomRestVoice);
+      }, 2200);
     }
 
     // 全セット終了
@@ -446,14 +486,12 @@
       jutaImg.src = 'juta_finish.png';
 
       beeImg.src = 'bee_finish.png';
-      beeImg.classList.add('flip-right'); // 右向き
+      beeImg.classList.add('flip-right');
       messageText.textContent = '「やったね！今日もお疲れ様でした！」';
 
-      // 全音声停止
       bgmAudio.pause();
       restAudio.pause();
 
-      // 順序: Bee「やったね！今日もお疲れ様でした！」 ➔ Juta「お疲れ様でした！」
       safePlayAudio('bee_finish.mp3');
       setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3800);
     }
