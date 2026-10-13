@@ -421,13 +421,18 @@
       beeImg.classList.remove('flip-right');
       messageText.textContent = '「がんばれがんばれー！」';
 
-      // 【掛け合い】
+      // 【掛け合いタイムライン】
+      // 1. Juta「運動スタート」（1秒ちょっと）
       safePlayAudio('juta_start.mp3');
-      setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1100);
+
+      // 2. 1.6秒後 ➔ Bee「がんばれがんばれ」（少し遅らせて被りを解消！）
+      setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1600);
+
+      // 3. 4.8秒後 ➔ 息づかい（奇数: 5秒「はぁはぁ」 / 偶数: 3秒「ふっひぃっ」）
       setTimeout(() => {
         const breathVoice = isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3';
         safePlayAudio(breathVoice, 0.8);
-      }, 4200);
+      }, 4800);
     }
 
     // 休憩フェーズ開始
