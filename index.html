@@ -280,3 +280,213 @@
     function initDisplay() {
       totalSets = parseInt(document.getElementById('setCountSelect').value);
       initialWorkTime = parseInt(document.getElementById('workTimeSelect').value);
+      timeLeft = initialWorkTime;
+      setsInfo.textContent = `1/${totalSets} セット`;
+      timeDisplay.textContent = formatTime(timeLeft);
+    }
+    document.getElementById('workTimeSelect').addEventListener('change', initDisplay);
+    document.getElementById('setCountSelect').addEventListener('change', initDisplay);
+    initDisplay();
+
+    // タイマー開始/一時停止
+    function toggleTimer() {
+      if (!isRunning) {
+        startTimer();
+      } else {
+        pauseTimer();
+      }
+    }
+
+    function startTimer() {
+      isRunning = true;
+      startBtn.textContent = '一時停止';
+
+      if (currentPhase === 'idle') {
+        currentSet = 1;
+        startWorkPhase();
+      } else if (currentPhase === 'work') {
+        jutaVideo.play().catch(e => console.log(e));
+        try {
+          bgmAudio.volume = 0.25;
+          bgmAudio.play().catch(e => console.log(e));
+        } catch(e) {}
+      } else if (currentPhase === 'rest') {
+        try {
+          restAudio.volume = 0.4;
+          restAudio.play().catch(e => console.log(e));
+        } catch(e) {}
+      }
+
+      if (timerId) clearInterval(timerId);
+      timerId = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      isRunning = false;
+      startBtn.textContent = '再開';
+      clearInterval(timerId);
+      jutaVideo.pause();
+      bgmAudio.pause();
+      restAudio.pause();
+    }
+
+    function resetTimer() {
+      clearInterval(timerId);
+      isRunning = false;
+      currentPhase = 'idle';
+      startBtn.textContent = '運動スタート';
+
+      jutaVideo.pause();
+      jutaVideo.style.display = 'none';
+      jutaImg.style.display = 'block';
+      jutaImg.src = 'juta_sleep.png';
+
+      beeImg.src = 'bee_welcome_push.png';
+      beeImg.classList.add('flip-right');
+      messageText.textContent = '「時間を選んでスタートを押してね！」';
+      statusBadge.textContent = 'すやすや…';
+
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+      restAudio.pause();
+      restAudio.currentTime = 0;
+
+      initDisplay();
+    }
+
+    // 1秒ごとの処理
+    function tick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        timeDisplay.textContent = formatTime(timeLeft);
+
+        // 運動中（work）の掛け声ロジック
+        if (currentPhase === 'work') {
+          const halfTime = Math.floor(initialWorkTime / 2);
+
+          if (timeLeft === halfTime) {
+            safePlayAudio('juta_breath_atohannbun.mp3');
+          } else if (timeLeft === 5) {
+            safePlayAudio('juta_breath_moudame2.mp3');
+          } else if (timeLeft % 10 === 0 && timeLeft > 5) {
+            const randomVoice = workRandomVoices[Math.floor(Math.random() * workRandomVoices.length)];
+            safePlayAudio(randomVoice);
+          }
+        }
+      } else {
+        // フェーズ切替
+        if (currentPhase === 'work') {
+          if (currentSet < totalSets) {
+            startRestPhase();
+          } else {
+            finishWorkout();
+          }
+        } else if (currentPhase === 'rest') {
+          currentSet++;
+          startWorkPhase();
+        }
+      }
+    }
+
+    // 運動フェーズ開始
+    function startWorkPhase() {
+      currentPhase = 'work';
+      initialWorkTime = parseInt(document.getElementById('workTimeSelect').value);
+      timeLeft = initialWorkTime;
+      timeDisplay.textContent = formatTime(timeLeft);
+      setsInfo.textContent = `${currentSet}/${totalSets} セット`;
+      statusBadge.textContent = '運動中！';
+
+      // 運動BGM再生
+      restAudio.pause();
+      restAudio.currentTime = 0;
+      try {
+        bgmAudio.volume = 0.25;
+        bgmAudio.play().catch(e => console.log(e));
+      } catch(e) {}
+
+      // 動画切替
+      const isOdd = (currentSet % 2 !== 0);
+      const targetVideo = isOdd ? 'juta_work1.mp4' : 'juta_work2.mp4';
+      if (jutaVideo.getAttribute('src') !== targetVideo) {
+        jutaVideo.src = targetVideo;
+      }
+
+      jutaImg.style.display = 'none';
+      jutaVideo.style.display = 'block';
+      jutaVideo.currentTime = 0;
+      jutaVideo.play().catch(e => console.log(e));
+
+      beeImg.src = 'bee_cheer.png';
+      beeImg.classList.remove('flip-right');
+      messageText.textContent = '「がんばれがんばれー！」';
+
+      // 【掛け合い】
+      safePlayAudio('juta_start.mp3');
+      setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1100);
+      setTimeout(() => {
+        const breathVoice = isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3';
+        safePlayAudio(breathVoice, 0.8);
+      }, 4200);
+    }
+
+    // 休憩フェーズ開始
+    function startRestPhase() {
+      currentPhase = 'rest';
+      timeLeft = parseInt(document.getElementById('restTimeSelect').value);
+      timeDisplay.textContent = formatTime(timeLeft);
+      statusBadge.textContent = '休憩中…';
+
+      // BGM停止 & 鳥のさえずり再生
+      bgmAudio.pause();
+      try {
+        restAudio.volume = 0.4;
+        restAudio.play().catch(e => console.log(e));
+      } catch(e) {}
+
+      // 表示切り替え
+      jutaVideo.pause();
+      jutaVideo.style.display = 'none';
+      jutaImg.style.display = 'block';
+      jutaImg.src = 'juta_rest.png';
+
+      beeImg.src = 'bee_rest.png';
+      beeImg.classList.add('flip-right');
+      messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
+
+      // 【休憩掛け合い】
+      const restVoice = (currentSet === 1) ? 'juta_rest1.mp3' : 'juta_rest2.mp3';
+      safePlayAudio(restVoice);
+      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 2200);
+      setTimeout(() => {
+        const randomRestVoice = restRandomVoices[Math.floor(Math.random() * restRandomVoices.length)];
+        safePlayAudio(randomRestVoice);
+      }, 5500);
+    }
+
+    // 全セット終了
+    function finishWorkout() {
+      clearInterval(timerId);
+      isRunning = false;
+      currentPhase = 'finished';
+      statusBadge.textContent = '完了！';
+      startBtn.textContent = '運動スタート';
+
+      jutaVideo.pause();
+      jutaVideo.style.display = 'none';
+      jutaImg.style.display = 'block';
+      jutaImg.src = 'juta_finish.png';
+
+      beeImg.src = 'bee_finish.png';
+      beeImg.classList.add('flip-right');
+      messageText.textContent = '「やったね！今日もお疲れ様でした！」';
+
+      bgmAudio.pause();
+      restAudio.pause();
+
+      safePlayAudio('bee_finish.mp3');
+      setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3200);
+    }
+  </script>
+</body>
+</html>
