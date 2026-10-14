@@ -213,8 +213,8 @@
     </div>
   </div>
 
-  <!-- BGM & 環境音要素 -->
-  <audio id="bgmAudio" src="juta_bgm_demo.mp3" loop></audio>
+  <!-- BGM & 環境音要素（動的に切り替え） -->
+  <audio id="bgmAudio" loop></audio>
   <audio id="restAudio" src="birds_ambient.mp3" loop></audio>
 
   <script>
@@ -237,24 +237,28 @@
     const bgmAudio = document.getElementById('bgmAudio');
     const restAudio = document.getElementById('restAudio');
 
-    // 運動中のランダムボイス候補
+    // 運動中のランダムボイス候補（新リスト）
     const workRandomVoices = [
       'juta_breath_kitsui.mp3',
       'juta_rest4.mp3',
-      'juta_rest3.mp3',
+      'juta_breath_a-tukareta.mp3',
+      'juta_breath_kyukeishitai.mp3',
       'juta_breath_moudame1.mp3',
+      'juta_breath_moudame2.mp3',
       'juta_breath_tukareta.mp3',
-      'bee_breath_madamada.mp3',
-      'juta_keepitup.mp3'
+      'juta_keepitup.mp3',
+      'bee_breath_madamada.mp3'
     ];
 
-    // 休憩中のランダムボイス候補
+    // 休憩中のランダムボイス候補（新リスト）
     const restRandomVoices = [
-      'juta_breath_konjotte.mp3',
-      'juta_breath_motukareta.mp3'
+      'juta_rest_konjotte.mp3',
+      'juta_rest_motukareta.mp3',
+      'juta_rest_kitsui.mp3',
+      'juta_rest_kyuukeimijikai.mp3'
     ];
 
-    // 100%エラーで止まらない安全な音声再生関数
+    // 安全な音声再生関数
     function safePlayAudio(filename, volume = 1.0) {
       if (!filename) return;
       try {
@@ -360,15 +364,22 @@
         timeLeft--;
         timeDisplay.textContent = formatTime(timeLeft);
 
-        // 運動中（work）の掛け声ロジック
+        // 運動中（work）のボイス制御
         if (currentPhase === 'work') {
           const halfTime = Math.floor(initialWorkTime / 2);
 
+          // 1. 残り半分になった時
           if (timeLeft === halfTime) {
-            safePlayAudio('juta_breath_atohannbun.mp3');
-          } else if (timeLeft === 5) {
+            const halfVoices = ['juta_breath_atohannbun.mp3', 'juta_breath_kyukemadeatodorekurai.mp3'];
+            const chosenHalf = halfVoices[Math.floor(Math.random() * halfVoices.length)];
+            safePlayAudio(chosenHalf);
+          }
+          // 2. 残り5秒（ラストスパート）
+          else if (timeLeft === 5) {
             safePlayAudio('juta_breath_moudame2.mp3');
-          } else if (timeLeft % 10 === 0 && timeLeft > 5) {
+          }
+          // 3. 運動中の定期的なランダムボイス（8〜10秒間隔）
+          else if (timeLeft % 9 === 0 && timeLeft > 5) {
             const randomVoice = workRandomVoices[Math.floor(Math.random() * workRandomVoices.length)];
             safePlayAudio(randomVoice);
           }
@@ -397,7 +408,14 @@
       setsInfo.textContent = `${currentSet}/${totalSets} セット`;
       statusBadge.textContent = '運動中！';
 
-      // 運動BGM再生
+      // 奇数セット: BGM1 (WAV) / 偶数セット: BGM2 (WAV)
+      const isOdd = (currentSet % 2 !== 0);
+      const bgmTarget = isOdd ? 'juta_bgm_sample1_180sec.wav' : 'juta_bgm_sample2_180sec.wav';
+      if (bgmAudio.getAttribute('src') !== bgmTarget) {
+        bgmAudio.src = bgmTarget;
+      }
+
+      // BGM再生
       restAudio.pause();
       restAudio.currentTime = 0;
       try {
@@ -406,7 +424,6 @@
       } catch(e) {}
 
       // 動画切替
-      const isOdd = (currentSet % 2 !== 0);
       const targetVideo = isOdd ? 'juta_work1.mp4' : 'juta_work2.mp4';
       if (jutaVideo.getAttribute('src') !== targetVideo) {
         jutaVideo.src = targetVideo;
@@ -421,14 +438,15 @@
       beeImg.classList.remove('flip-right');
       messageText.textContent = '「がんばれがんばれー！」';
 
-      // 【掛け合いタイムライン】
-      // 1. Juta「運動スタート」（1秒ちょっと）
-      safePlayAudio('juta_start.mp3');
+      // 【スタート掛け合い】
+      // 1. 1回目は juta_start1 / 2回目以降は juta_start2
+      const startVoice = (currentSet === 1) ? 'juta_start1.mp3' : 'juta_start2.mp3';
+      safePlayAudio(startVoice);
 
-      // 2. 1.6秒後 ➔ Bee「がんばれがんばれ」（少し遅らせて被りを解消！）
+      // 2. 1.6秒後 ➔ Bee「がんばれがんばれ」
       setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1600);
 
-      // 3. 4.8秒後 ➔ 息づかい（奇数: 5秒「はぁはぁ」 / 偶数: 3秒「ふっひぃっ」）
+      // 3. 4.8秒後 ➔ 息づかい（奇数: juta_breath_fufu_1st / 偶数: juta_breath_fufu_2nd）
       setTimeout(() => {
         const breathVoice = isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3';
         safePlayAudio(breathVoice, 0.8);
@@ -459,10 +477,15 @@
       beeImg.classList.add('flip-right');
       messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
 
-      // 【休憩掛け合い】
-      const restVoice = (currentSet === 1) ? 'juta_rest1.mp3' : 'juta_rest2.mp3';
-      safePlayAudio(restVoice);
-      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 2200);
+      // 【休憩頭の掛け合い】
+      // 1. Juta「休憩〜」（juta_rest1 または juta_rest2 をランダム）
+      const headRestVoice = (Math.random() < 0.5) ? 'juta_rest1.mp3' : 'juta_rest2.mp3';
+      safePlayAudio(headRestVoice);
+
+      // 2. 2.0秒後 ➔ Bee「は～、しっかり息を整えて」
+      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 2000);
+
+      // 3. 5.5秒後 ➔ 休憩中のランダム本音つぶやき（4種から選択）
       setTimeout(() => {
         const randomRestVoice = restRandomVoices[Math.floor(Math.random() * restRandomVoices.length)];
         safePlayAudio(randomRestVoice);
@@ -489,8 +512,15 @@
       bgmAudio.pause();
       restAudio.pause();
 
-      safePlayAudio('bee_finish.mp3');
-      setTimeout(() => { safePlayAudio('juta_finish.mp3'); }, 3200);
+      // 【ラストの固定順番掛け合い】
+      // 1. Juta「終了、よくやった！」（3秒）
+      safePlayAudio('juta_end_syuuryo_yokuyatta.mp3');
+
+      // 2. 3.2秒後 ➔ Bee「やったね、今日もお疲れ様」（3秒）
+      setTimeout(() => { safePlayAudio('bee_finish.mp3'); }, 3200);
+
+      // 3. 6.5秒後 ➔ Juta「えっへん」
+      setTimeout(() => { safePlayAudio('juta_end_ehhen.mp3'); }, 6500);
     }
   </script>
 </body>
