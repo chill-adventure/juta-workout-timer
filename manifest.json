@@ -1,6 +1,6 @@
 {
-  "name": "Jutaの運動タイマー",
-  "short_name": "Jutaタイマー",
+  "name": "Juta Workout Timer",
+  "short_name": "JBタイマー",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1b26",
