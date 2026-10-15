@@ -1,8 +1,10 @@
 {
+  "id": "/juta-workout-timer/",
+  "scope": "./",
+  "start_url": "./index.html",
   "name": "Jutaの運動タイマー",
   "short_name": "Jutaタイマー",
   "description": "JutaとBeeが応援してくれる音声対話型ワークアウトタイマー",
-  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1b26",
   "theme_color": "#24283b",
