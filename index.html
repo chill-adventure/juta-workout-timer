@@ -2,13 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jutaの運動タイマー</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* iPhoneでの不要なスクロールを防止 */
     }
     body {
       background-color: #1a1b26;
@@ -18,31 +23,35 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      padding: 20px;
+      min-height: 100dvh; /* iPhoneのDynamic Viewport Heightに対応 */
+      padding: 12px;
     }
     .timer-card {
       background-color: #24283b;
-      border-radius: 24px;
-      padding: 24px;
+      border-radius: 20px;
+      padding: 16px;
       width: 100%;
-      max-width: 400px;
+      max-width: 380px;
+      max-height: 96dvh; /* 画面内に収める上限を設定 */
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
+      justify-content: space-between;
+      gap: 10px;
     }
     .media-container {
       position: relative;
-      width: 240px;
-      height: 240px;
+      width: 180px;
+      height: 180px;
       border-radius: 50%;
       overflow: hidden;
-      border: 4px solid #38bdf8;
+      border: 3px solid #38bdf8;
       background-color: #000;
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-shrink: 0;
     }
     .media-container video,
     .media-container img {
@@ -55,16 +64,16 @@
     .bee-container {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       background: rgba(255, 255, 255, 0.05);
-      padding: 8px 16px;
-      border-radius: 30px;
+      padding: 6px 14px;
+      border-radius: 24px;
       width: 100%;
       justify-content: center;
     }
     .bee-avatar {
-      width: 60px;
-      height: 60px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
       object-fit: contain;
       transition: transform 0.2s;
@@ -73,71 +82,71 @@
       transform: scaleX(-1);
     }
     .bee-speech {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       color: #e0af68;
     }
 
     .status-badge {
       background-color: #3b4261;
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 14px;
+      padding: 4px 14px;
+      border-radius: 16px;
+      font-size: 13px;
       font-weight: bold;
     }
     .sets-info {
-      font-size: 16px;
+      font-size: 14px;
       color: #a9b1d6;
     }
     .timer-display {
-      font-size: 56px;
+      font-size: 48px;
       font-weight: 800;
       color: #38bdf8;
       letter-spacing: 2px;
       font-variant-numeric: tabular-nums;
+      line-height: 1;
     }
     .settings-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
       width: 100%;
       background-color: #1f2335;
-      padding: 12px;
-      border-radius: 16px;
+      padding: 10px;
+      border-radius: 14px;
     }
     .setting-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
     .setting-item label {
-      font-size: 11px;
+      font-size: 10px;
       color: #787c99;
     }
     .setting-item select {
       background-color: #292e42;
       color: #fff;
       border: 1px solid #414868;
-      padding: 6px 8px;
-      border-radius: 8px;
-      font-size: 13px;
+      padding: 5px 4px;
+      border-radius: 6px;
+      font-size: 12px;
       width: 100%;
       text-align: center;
       outline: none;
     }
     .button-group {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       width: 100%;
-      margin-top: 8px;
     }
     .btn {
       flex: 1;
-      padding: 14px;
+      padding: 12px;
       border: none;
-      border-radius: 16px;
-      font-size: 16px;
+      border-radius: 14px;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.2s;
@@ -155,6 +164,14 @@
     }
     .btn-reset:hover {
       background-color: #fb7185;
+    }
+
+    /* 画面サイズが小さいiPhone SE等への調整 */
+    @media (max-height: 670px) {
+      .media-container { width: 140px; height: 140px; }
+      .timer-display { font-size: 40px; }
+      .bee-avatar { width: 38px; height: 38px; }
+      .btn { padding: 10px; font-size: 14px; }
     }
   </style>
 </head>
@@ -184,6 +201,7 @@
         <label>運動時間</label>
         <select id="workTimeSelect">
           <option value="30">30秒（ちょこ）</option>
+          <option value="45">45秒</option>
           <option value="60">1分</option>
           <option value="180">3分</option>
         </select>
@@ -237,7 +255,7 @@
     const bgmAudio = document.getElementById('bgmAudio');
     const restAudio = document.getElementById('restAudio');
 
-    // 運動中のランダムセリフ候補（juta_breath_moudame.mp3 を指定）
+    // 運動中のランダムセリフ候補
     const workRandomSpeech = [
       'juta_breath_kitsui.mp3',
       'juta_rest4.mp3',
@@ -256,7 +274,7 @@
       'juta_rest_kyuukeimijikai.mp3'
     ];
 
-    // 100%エラーで止まらない安全な音声再生関数
+    // 安全な音声再生関数
     function safePlayAudio(filename, volume = 1.0) {
       if (!filename) return;
       try {
@@ -365,27 +383,37 @@
         // 運動中（work）の演出
         if (currentPhase === 'work') {
           const halfTime = Math.floor(initialWorkTime / 2);
+          const quarterTime = Math.floor(initialWorkTime / 4);
           const isOdd = (currentSet % 2 !== 0);
           const breathVoice = isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3';
 
-          // 1. 残り半分になった時
-          if (timeLeft === halfTime) {
-            const halfVoices = ['juta_breath_atohannbun.mp3', 'juta_breath_kyukemadeatodorekurai.mp3'];
-            const chosenHalf = halfVoices[Math.floor(Math.random() * halfVoices.length)];
-            safePlayAudio(chosenHalf);
+          // 残り3秒でBeeのカウントダウン（3, 2, 1）
+          if (timeLeft === 3) {
+            safePlayAudio('bee_cnt.wav');
           }
-          // 2. 残り5秒（ラストスパート）
-          else if (timeLeft === 5) {
-            safePlayAudio('juta_breath_moudame.mp3');
+          // 残り半分になった時 ➔ 「あと半分〜」固定
+          else if (timeLeft === halfTime) {
+            safePlayAudio('juta_breath_atohannbun.mp3');
           }
-          // 3. 5秒おきに「息ボイス」と「ランダムセリフ」を交互に挟む
-          else if (timeLeft > 5 && timeLeft % 5 === 0) {
+          // 次のセットがある場合のみ、残り1/4の時点 ➔ 「休憩まであとどれくらい？」
+          else if (timeLeft === quarterTime && currentSet < totalSets && quarterTime > 3) {
+            safePlayAudio('juta_breath_kyukemadeatodorekurai.mp3');
+          }
+          // 5秒おきに「息ボイス」と「ランダムセリフ」を交互に挿入
+          else if (timeLeft > 3 && timeLeft % 5 === 0) {
             if (timeLeft % 10 === 0) {
               safePlayAudio(breathVoice, 0.8);
             } else {
               const randomSpeech = workRandomSpeech[Math.floor(Math.random() * workRandomSpeech.length)];
               safePlayAudio(randomSpeech);
             }
+          }
+        }
+        // 休憩中（rest）の演出
+        else if (currentPhase === 'rest') {
+          // 休憩終わりの3秒前にもBeeのカウントダウン（3, 2, 1）
+          if (timeLeft === 3) {
+            safePlayAudio('bee_cnt.wav');
           }
         }
       } else {
@@ -439,6 +467,7 @@
       beeImg.classList.remove('flip-right');
       messageText.textContent = '「がんばれがんばれー！」';
 
+      // 【スタート掛け合い】
       const startVoice = (currentSet === 1) ? 'juta_start1.mp3' : 'juta_start2.mp3';
       safePlayAudio(startVoice);
 
@@ -472,6 +501,7 @@
       beeImg.classList.add('flip-right');
       messageText.textContent = '「ふぅ〜しっかり息を整えてね！」';
 
+      // Juta「休憩〜」（juta_rest1 または juta_rest2）
       const headRestVoice = (Math.random() < 0.5) ? 'juta_rest1.mp3' : 'juta_rest2.mp3';
       safePlayAudio(headRestVoice);
 
