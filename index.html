@@ -544,5 +544,59 @@
       setTimeout(() => { safePlayAudio('juta_end_ehhen.mp3'); }, 6500);
     }
   </script>
+
+<!-- 一時診断UI：配布前に削除可能。タイマー本体には干渉しません -->
+<div id="pwaDiag" style="position:fixed;left:10px;bottom:12px;z-index:9999;font-family:sans-serif;font-size:13px;max-width:calc(100vw - 20px)">
+  <button id="pwaDiagToggle" type="button" style="background:#f8e6a0;color:#171717;border:1px solid #805a14;padding:8px 12px;border-radius:10px;font-weight:bold">🔧 インストール診断</button>
+  <div id="pwaDiagPanel" hidden style="background:#fff;color:#161616;border-radius:10px;padding:12px;margin-top:6px;max-width:350px;box-shadow:0 4px 20px #0008">
+    <div id="pwaDiagState" role="status" aria-live="polite">判定中…</div>
+    <button id="pwaDiagInstall" type="button" disabled style="padding:8px;margin-top:8px;border-radius:7px">インストールを試す</button>
+    <button id="pwaDiagClose" type="button" style="padding:8px;margin-top:8px;border-radius:7px">閉じる</button>
+    <div style="margin-top:8px;font-size:11px">※「利用可能」になる場合のみインストールを開始できます。強制インストールはできません。</div>
+  </div>
+</div>
+<script>
+(() => {
+  let installPrompt = null;
+  const panel = document.getElementById('pwaDiagPanel');
+  const state = document.getElementById('pwaDiagState');
+  const installButton = document.getElementById('pwaDiagInstall');
+  const inStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  function update(message) {
+    state.textContent = message;
+    installButton.disabled = !installPrompt;
+  }
+  update(inStandalone() ? 'standalone起動中（インストール済みの可能性）' : 'Chromeから閲覧中。インストールイベント待機中…');
+  document.getElementById('pwaDiagToggle').addEventListener('click', () => { panel.hidden = !panel.hidden; });
+  document.getElementById('pwaDiagClose').addEventListener('click', () => { panel.hidden = true; });
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    installPrompt = event;
+    update('✅ インストール案内が利用可能です。');
+    panel.hidden = false;
+  });
+  window.addEventListener('appinstalled', () => {
+    installPrompt = null;
+    update('✅ インストール完了イベントを受信しました。ホーム画面とアプリ一覧をご確認ください。');
+    panel.hidden = false;
+  });
+  installButton.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    const promptEvent = installPrompt;
+    installPrompt = null;
+    update('Chromeの確認画面を待っています…');
+    try {
+      await promptEvent.prompt();
+      const result = await promptEvent.userChoice;
+      update('選択結果: ' + (result?.outcome || '不明') + '。アプリ一覧でも確認してください。');
+    } catch (err) {
+      update('インストール案内の呼び出しに失敗: ' + (err?.message || String(err)));
+    }
+  });
+  setTimeout(() => {
+    if (!installPrompt && !inStandalone()) update('⚠️ 10秒経過：インストールイベント未発生（すでに認識済み、条件未達、Chrome側の問題などが候補）。');
+  }, 10000);
+})();
+</script>
 </body>
 </html>
