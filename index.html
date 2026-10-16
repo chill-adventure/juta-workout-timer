@@ -6,7 +6,7 @@
   <title>Jutaの運動タイマー</title>
   
 <!-- PWA化・アプリアイコン設定 -->
-  <link rel="manifest" href="manifest.json?v=2">
+  <link rel="manifest" href="manifest.json?v=3">
   <link rel="apple-touch-icon" href="icon-512.png?v=2">
   <meta name="theme-color" content="#24283b">
 
@@ -280,15 +280,47 @@
       'juta_rest_kyuukeimijikai.mp3'
     ];
 
+    // セリフ・カウントダウンを一括管理する（一時停止・リセットで即停止）
+    const activeVoices = new Set();
+    const voiceTimers = new Set();
+
+    function stopVoices() {
+      for (const timeoutId of voiceTimers) clearTimeout(timeoutId);
+      voiceTimers.clear();
+      for (const audio of activeVoices) {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.removeAttribute('src');
+        audio.load();
+      }
+      activeVoices.clear();
+    }
+
+    function scheduleVoice(filename, delay, volume = 1.0) {
+      const phase = currentPhase;
+      const timeoutId = setTimeout(() => {
+        voiceTimers.delete(timeoutId);
+        if (currentPhase === phase && (isRunning || phase === 'finished')) {
+          safePlayAudio(filename, volume);
+        }
+      }, delay);
+      voiceTimers.add(timeoutId);
+    }
+
     // 安全な音声再生関数
     function safePlayAudio(filename, volume = 1.0) {
       if (!filename) return;
       try {
+        if (!isRunning && currentPhase !== 'finished') return;
         const audio = new Audio(filename);
         audio.volume = volume;
+        activeVoices.add(audio);
+        const cleanup = () => activeVoices.delete(audio);
+        audio.addEventListener('ended', cleanup, { once: true });
+        audio.addEventListener('error', cleanup, { once: true });
         const promise = audio.play();
         if (promise !== undefined) {
-          promise.catch(err => console.log("Audio blocked/missing:", filename));
+          promise.catch(err => { cleanup(); console.log("Audio blocked/missing:", filename); });
         }
       } catch (e) {
         console.log("Audio error:", e);
@@ -349,6 +381,7 @@
 
     function pauseTimer() {
       isRunning = false;
+      stopVoices();
       startBtn.textContent = '再開';
       clearInterval(timerId);
       jutaVideo.pause();
@@ -357,6 +390,7 @@
     }
 
     function resetTimer() {
+      stopVoices();
       clearInterval(timerId);
       isRunning = false;
       currentPhase = 'idle';
@@ -439,6 +473,7 @@
 
     // 運動フェーズ開始
     function startWorkPhase() {
+      stopVoices();
       currentPhase = 'work';
       initialWorkTime = parseInt(document.getElementById('workTimeSelect').value);
       timeLeft = initialWorkTime;
@@ -477,16 +512,14 @@
       const startVoice = (currentSet === 1) ? 'juta_start1.mp3' : 'juta_start2.mp3';
       safePlayAudio(startVoice);
 
-      setTimeout(() => { safePlayAudio('bee_cheer.mp3'); }, 1600);
+      scheduleVoice('bee_cheer.mp3', 1600);
 
-      setTimeout(() => {
-        const breathVoice = isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3';
-        safePlayAudio(breathVoice, 0.8);
-      }, 4800);
+      scheduleVoice(isOdd ? 'juta_breath_fufu_1st.mp3' : 'juta_breath_fufu_2nd.mp3', 4800, 0.8);
     }
 
     // 休憩フェーズ開始
     function startRestPhase() {
+      stopVoices();
       currentPhase = 'rest';
       timeLeft = parseInt(document.getElementById('restTimeSelect').value);
       timeDisplay.textContent = formatTime(timeLeft);
@@ -511,16 +544,14 @@
       const headRestVoice = (Math.random() < 0.5) ? 'juta_rest1.mp3' : 'juta_rest2.mp3';
       safePlayAudio(headRestVoice);
 
-      setTimeout(() => { safePlayAudio('bee_rest.mp3'); }, 2000);
+      scheduleVoice('bee_rest.mp3', 2000);
 
-      setTimeout(() => {
-        const randomRestVoice = restRandomVoices[Math.floor(Math.random() * restRandomVoices.length)];
-        safePlayAudio(randomRestVoice);
-      }, 5500);
+      scheduleVoice(restRandomVoices[Math.floor(Math.random() * restRandomVoices.length)], 5500);
     }
 
     // 全セット終了
     function finishWorkout() {
+      stopVoices();
       clearInterval(timerId);
       isRunning = false;
       currentPhase = 'finished';
@@ -540,63 +571,10 @@
       restAudio.pause();
 
       safePlayAudio('juta_end_syuuryo_yokuyatta.mp3');
-      setTimeout(() => { safePlayAudio('bee_finish.mp3'); }, 3200);
-      setTimeout(() => { safePlayAudio('juta_end_ehhen.mp3'); }, 6500);
+      scheduleVoice('bee_finish.mp3', 3200);
+      scheduleVoice('juta_end_ehhen.mp3', 6500);
     }
   </script>
 
-<!-- 一時診断UI：配布前に削除可能。タイマー本体には干渉しません -->
-<div id="pwaDiag" style="position:fixed;left:10px;bottom:12px;z-index:9999;font-family:sans-serif;font-size:13px;max-width:calc(100vw - 20px)">
-  <button id="pwaDiagToggle" type="button" style="background:#f8e6a0;color:#171717;border:1px solid #805a14;padding:8px 12px;border-radius:10px;font-weight:bold">🔧 インストール診断</button>
-  <div id="pwaDiagPanel" hidden style="background:#fff;color:#161616;border-radius:10px;padding:12px;margin-top:6px;max-width:350px;box-shadow:0 4px 20px #0008">
-    <div id="pwaDiagState" role="status" aria-live="polite">判定中…</div>
-    <button id="pwaDiagInstall" type="button" disabled style="padding:8px;margin-top:8px;border-radius:7px">インストールを試す</button>
-    <button id="pwaDiagClose" type="button" style="padding:8px;margin-top:8px;border-radius:7px">閉じる</button>
-    <div style="margin-top:8px;font-size:11px">※「利用可能」になる場合のみインストールを開始できます。強制インストールはできません。</div>
-  </div>
-</div>
-<script>
-(() => {
-  let installPrompt = null;
-  const panel = document.getElementById('pwaDiagPanel');
-  const state = document.getElementById('pwaDiagState');
-  const installButton = document.getElementById('pwaDiagInstall');
-  const inStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  function update(message) {
-    state.textContent = message;
-    installButton.disabled = !installPrompt;
-  }
-  update(inStandalone() ? 'standalone起動中（インストール済みの可能性）' : 'Chromeから閲覧中。インストールイベント待機中…');
-  document.getElementById('pwaDiagToggle').addEventListener('click', () => { panel.hidden = !panel.hidden; });
-  document.getElementById('pwaDiagClose').addEventListener('click', () => { panel.hidden = true; });
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    installPrompt = event;
-    update('✅ インストール案内が利用可能です。');
-    panel.hidden = false;
-  });
-  window.addEventListener('appinstalled', () => {
-    installPrompt = null;
-    update('✅ インストール完了イベントを受信しました。ホーム画面とアプリ一覧をご確認ください。');
-    panel.hidden = false;
-  });
-  installButton.addEventListener('click', async () => {
-    if (!installPrompt) return;
-    const promptEvent = installPrompt;
-    installPrompt = null;
-    update('Chromeの確認画面を待っています…');
-    try {
-      await promptEvent.prompt();
-      const result = await promptEvent.userChoice;
-      update('選択結果: ' + (result?.outcome || '不明') + '。アプリ一覧でも確認してください。');
-    } catch (err) {
-      update('インストール案内の呼び出しに失敗: ' + (err?.message || String(err)));
-    }
-  });
-  setTimeout(() => {
-    if (!installPrompt && !inStandalone()) update('⚠️ 10秒経過：インストールイベント未発生（すでに認識済み、条件未達、Chrome側の問題などが候補）。');
-  }, 10000);
-})();
-</script>
 </body>
 </html>
